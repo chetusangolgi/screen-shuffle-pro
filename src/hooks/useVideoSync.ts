@@ -49,38 +49,56 @@ export const videos: VideoConfig[] = [
 ];
 
 export const useVideoSync = () => {
+  // Always read from localStorage on every render to get the latest value
+  const getStoredVideoId = () => {
+    const stored = localStorage.getItem(VIDEO_STORAGE_KEY);
+    console.log('🔍 Reading from localStorage:', stored);
+    return stored || '1';
+  };
+
   const [currentVideoId, setCurrentVideoId] = useState<string>(() => {
-    return localStorage.getItem(VIDEO_STORAGE_KEY) || '1';
+    const initial = getStoredVideoId();
+    console.log('🎬 Initial video ID on mount:', initial);
+    return initial;
   });
 
   useEffect(() => {
+    // Poll localStorage every 100ms to detect changes
+    const interval = setInterval(() => {
+      const storedId = getStoredVideoId();
+      if (storedId !== currentVideoId) {
+        console.log('📊 Video ID changed from', currentVideoId, 'to', storedId);
+        setCurrentVideoId(storedId);
+      }
+    }, 100);
+
+    // Also listen to storage events for cross-tab sync
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === VIDEO_STORAGE_KEY && e.newValue) {
+        console.log('🔄 Storage event detected, changing to:', e.newValue);
         setCurrentVideoId(e.newValue);
       }
     };
 
-    const handleCustomEvent = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      setCurrentVideoId(customEvent.detail);
-    };
-
     window.addEventListener('storage', handleStorageChange);
-    window.addEventListener('videoChange', handleCustomEvent);
 
     return () => {
+      clearInterval(interval);
       window.removeEventListener('storage', handleStorageChange);
-      window.removeEventListener('videoChange', handleCustomEvent);
     };
-  }, []);
+  }, [currentVideoId]);
 
   const changeVideo = (videoId: string) => {
+    console.log('🎬 changeVideo called with videoId:', videoId);
     localStorage.setItem(VIDEO_STORAGE_KEY, videoId);
+    console.log('💾 Saved to localStorage:', videoId);
     setCurrentVideoId(videoId);
-    window.dispatchEvent(new CustomEvent('videoChange', { detail: videoId }));
+    console.log('📊 State updated to:', videoId);
   };
 
   const currentVideo = videos.find((v) => v.id === currentVideoId) || videos[0];
+
+  console.log('🎯 useVideoSync render - ID:', currentVideoId, 'Title:', currentVideo.title);
 
   return { currentVideo, changeVideo, videos };
 };

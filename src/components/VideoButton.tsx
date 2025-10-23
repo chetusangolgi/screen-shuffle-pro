@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
 import { Play } from 'lucide-react';
-import { VideoConfig } from '@/hooks/useVideoSync';
+import { VideoConfig } from '@/contexts/VideoContext';
 
 interface VideoButtonProps {
   video: VideoConfig;

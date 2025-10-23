@@ -1,9 +1,14 @@
-import { useVideoSync } from '@/hooks/useVideoSync';
+import { useVideo } from '@/contexts/VideoContext';
 import VideoButton from '@/components/VideoButton';
 import { Monitor } from 'lucide-react';
 
 const Buttons = () => {
-  const { currentVideo, changeVideo, videos } = useVideoSync();
+  const { currentVideo, changeVideo, videos } = useVideo();
+
+  const handleVideoClick = (videoId: string) => {
+    // Just change the video - BroadcastChannel will sync to other tabs
+    changeVideo(videoId);
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -24,7 +29,7 @@ const Buttons = () => {
               key={video.id}
               video={video}
               isActive={currentVideo.id === video.id}
-              onClick={() => changeVideo(video.id)}
+              onClick={() => handleVideoClick(video.id)}
             />
           ))}
         </div>
@@ -34,7 +39,7 @@ const Buttons = () => {
             Current: <span className="text-foreground font-semibold">{currentVideo.title}</span>
           </p>
           <p className="text-xs text-muted-foreground mt-2">
-            Changes sync across all open tabs
+            Click a button to change the video
           </p>
         </footer>
       </div>

@@ -1,27 +1,58 @@
 import { useEffect, useRef } from 'react';
-import { useVideoSync } from '@/hooks/useVideoSync';
+import { useVideo } from '@/contexts/VideoContext';
 
 const VideoPlayer = () => {
-  const { currentVideo } = useVideoSync();
+  const { currentVideo, changeVideo } = useVideo();
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.load();
-      videoRef.current.play().catch(console.error);
+
+      const playPromise = videoRef.current.play();
+      if (playPromise !== undefined) {
+        playPromise.catch((error) => {
+          // Silently handle autoplay errors - user can click to play
+          if (error.name !== 'AbortError' && error.name !== 'NotAllowedError') {
+            console.error('Error playing video:', error);
+          }
+        });
+      }
     }
   }, [currentVideo.id]);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleVideoEnd = () => {
+      // Go back to default video (Video 1) when current video ends
+      changeVideo('1');
+    };
+
+    video.addEventListener('ended', handleVideoEnd);
+
+    return () => {
+      video.removeEventListener('ended', handleVideoEnd);
+    };
+  }, [changeVideo]);
+
+  const handleVideoClick = () => {
+    if (videoRef.current && videoRef.current.paused) {
+      videoRef.current.play().catch(console.error);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-background">
       <video
         ref={videoRef}
         key={currentVideo.id}
-        className="w-full h-full object-cover"
+        className="w-full h-full object-cover cursor-pointer"
         autoPlay
-        loop
         muted
         playsInline
+        onClick={handleVideoClick}
       >
         <source src={currentVideo.url} type="video/mp4" />
       </video>
